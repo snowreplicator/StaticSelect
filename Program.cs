@@ -6,6 +6,24 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 
+
+/*
+select lessons.* 
+from
+  classifiers.classifier cl
+inner join classifiers.classifierset cl_set
+        on cl.classifierset_id = cl_set.classifierset_id
+        inner join multi_d_cases."LessonSource" lessons
+                on cl.value::INTEGER = lessons."LessonSource_id"
+where
+    cl_set.classnamepk like '%LessonSource%'
+ and
+    cl.deleted = false
+order by
+  lessons.code desc,
+  lessons."Name" asc
+*/
+
 namespace ru.zorro.static_select
 {
     public class Program
