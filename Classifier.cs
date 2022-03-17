@@ -1,9 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ru.zorro.static_select
 {
     [Table("classifier", Schema = "classifiers")]
+    [Index(nameof(ClassifiersetId), nameof(Value), Name = "index_classifier_classifierset_id_value", IsUnique = true)]
     public partial class Classifier
     {
         [Key]
