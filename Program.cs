@@ -35,42 +35,16 @@ namespace ru.zorro.static_select
             ApplicationContext applicationContext = new ApplicationContext(DB_CONNECTION_STRING);
             AllDataInLesonSourceTable(applicationContext);
             //AllActiveDataByCustomSql(applicationContext);
+            AllLessonAndClassifierByQuery(applicationContext);
             //AllActiveDataByLinQ(applicationContext);
-            AllLessonAndClassifier(applicationContext);
+
             applicationContext.Dispose();
         }
 
-        // https://docs.microsoft.com/ru-ru/dotnet/csharp/linq/perform-inner-joins
-        private static void AllLessonAndClassifier(ApplicationContext applicationContext)
-        {
-            Console.WriteLine("\n all lesson and classifier:\n");
-            int classifierSetId = 1;
-            bool delete = true;
-            var models = from lessonSource in applicationContext.LessonSources
-                         join classifier in applicationContext.Classifiers
-                         on new
-                         {
-                             test1 = lessonSource.LessonSourceId.ToString(),
-                             test2 = classifierSetId
-                         }
-                         equals new
-                         {
-                             test1 = classifier.Value,
-                             test2 = classifier.ClassifiersetId
-                         }
-                         where classifier.Deleted == delete
-                         select lessonSource;
-                        /*{
-                            lessonid = lessonSource.LessonSourceId,
-                            classifierId = classifier.ClassifierId,
-                            classifier_classifiersetId = classifier.ClassifiersetId,
-                            value = classifier.Value
-                        };*/
-            foreach (object model in models)
-                Console.WriteLine(JsonConvert.SerializeObject(model));
-        }
 
 
+
+        // выборка данных через использование Linq
         // https://metanit.com/sharp/efcore/3.3.php
         // https://metanit.com/sharp/efcore/5.3.php
         private static void AllActiveDataByLinQ(ApplicationContext applicationContext)
@@ -158,6 +132,41 @@ namespace ru.zorro.static_select
                     .Include(u => u.Company)  // подгружаем данные по компаниям
                     .ToList();*/
         }
+
+
+
+        // выбора данных через использование query
+        // https://docs.microsoft.com/ru-ru/dotnet/csharp/linq/perform-inner-joins
+        private static void AllLessonAndClassifierByQuery(ApplicationContext applicationContext)
+        {
+            Console.WriteLine("\n all lesson and classifier:\n");
+            int classifierSetId = 1;
+            bool delete = false;
+            var models = from lessonSource in applicationContext.LessonSources
+                         join classifier in applicationContext.Classifiers
+                         on new
+                         {
+                             test1 = lessonSource.LessonSourceId.ToString(),
+                             test2 = classifierSetId
+                         }
+                         equals new
+                         {
+                             test1 = classifier.Value,
+                             test2 = classifier.ClassifiersetId
+                         }
+                         where classifier.Deleted == delete
+                         select lessonSource;
+            /*{
+                lessonid = lessonSource.LessonSourceId,
+                classifierId = classifier.ClassifierId,
+                classifier_classifiersetId = classifier.ClassifiersetId,
+                value = classifier.Value
+            };*/
+            foreach (object model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+        }
+
+
 
 
         // выборка неудаленных данных из LessonSource и Classifier custom sql
