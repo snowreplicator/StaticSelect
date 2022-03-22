@@ -35,8 +35,8 @@ namespace ru.zorro.static_select
             ApplicationContext applicationContext = new ApplicationContext(DB_CONNECTION_STRING);
             AllDataInLesonSourceTable(applicationContext);
             //AllActiveDataByCustomSql(applicationContext);
-            //AllLessonAndClassifierByQuery(applicationContext);
-            AllActiveDataByLinQ(applicationContext);
+            AllLessonAndClassifierByQuery(applicationContext);
+            //AllActiveDataByLinQ(applicationContext);
 
             applicationContext.Dispose();
         }
@@ -55,6 +55,7 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n data in lesson source table by linq (deleted = {0}):\n" , deleted);
 
 
+            /*
             // выборка Classifiersets со связкой на Classifiers
             var models1 = applicationContext.Classifiersets.Join(
                 applicationContext.Classifiers,
@@ -67,9 +68,10 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n list 1:\n");
             foreach (var model in models1)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
+            */
 
 
-
+            /*
             // выборка Classifiers со связкой на Classifiersets с учетом признака удаленности
             var models2 = applicationContext.Classifiers.Join(
                 applicationContext.Classifiersets,
@@ -83,7 +85,7 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n list 2:\n");
             foreach (var model in models2)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
-
+            */
 
             // выборка Classifiers со связкой на Classifiersets с учетом признака удаленности со всеми связываемыми параметрами
             var models3 = applicationContext.Classifiers.Join(applicationContext.Classifiersets,
@@ -99,11 +101,10 @@ namespace ru.zorro.static_select
             foreach (var model in models3)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
 
-            /*
-            var firstElement = GetNodesubsetDbSet().Join(GetClassifierDbSet(),
-                ns => ns.ClassifierId, cl => cl.ClassifierId, (ns, cl) => cl).
-                Where<Classifier>(cl => cl.ClassifiersetId == GetClassifierSet(modelType.Name).ClassifiersetId).FirstOrDefault();
-            */
+
+            // выборка Classifiers со связкой на Classifiersets и на LessonSource
+
+
             return;
 
 
@@ -201,6 +202,10 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n all lesson and classifier:\n");
             int classifierSetId = 1;
             bool delete = false;
+            string className = "LessonSource";
+
+
+            // соединение на 2 таблицы
             var models = from lessonSource in applicationContext.LessonSources
                          join classifier in applicationContext.Classifiers
                          on new
@@ -213,7 +218,8 @@ namespace ru.zorro.static_select
                              test1 = classifier.Value,
                              test2 = classifier.ClassifiersetId
                          }
-                         where classifier.Deleted == delete
+                         //where classifier.Deleted == delete
+                         where (delete == false ? classifier.Deleted == false : classifier.Deleted == true || classifier.Deleted == false)
                          select lessonSource;
             /*{
                 lessonid = lessonSource.LessonSourceId,
@@ -221,8 +227,50 @@ namespace ru.zorro.static_select
                 classifier_classifiersetId = classifier.ClassifiersetId,
                 value = classifier.Value
             };*/
+            Console.WriteLine("\n list 1:\n");
             foreach (object model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
+
+
+            // соединение на 3 таблицы
+            // https://stackoverflow.com/questions/21051612/entity-framework-join-3-tables
+            var models2 = from lessonSource in applicationContext.LessonSources
+                          join classifier in applicationContext.Classifiers
+                          on new
+                          {
+                              test1 = lessonSource.LessonSourceId.ToString(),
+                              test2 = classifierSetId
+                          }
+                          equals new
+                          {
+                              test1 = classifier.Value,
+                              test2 = classifier.ClassifiersetId
+                          }
+                          join classifier_set in applicationContext.Classifiersets
+                          on new
+                          {
+                              test3 = classifier.ClassifiersetId,
+                          }
+                          equals new
+                          {
+                              test3 = classifier_set.ClassifiersetId
+                          }
+                          where (delete == false ? classifier.Deleted == false : classifier.Deleted == true || classifier.Deleted == false) &&
+                                 classifier_set.Classnamepk == className
+                          //select classifier_set;
+                          //select classifier;
+                          //select lessonSource;
+                          select new
+                          {
+                              classifier_set,
+                              classifier,
+                              lessonSource
+                          };
+
+            Console.WriteLine("\n list 2:\n");
+            foreach (object model in models2)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
         }
 
 
