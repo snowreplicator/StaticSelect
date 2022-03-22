@@ -35,8 +35,8 @@ namespace ru.zorro.static_select
             ApplicationContext applicationContext = new ApplicationContext(DB_CONNECTION_STRING);
             AllDataInLesonSourceTable(applicationContext);
             //AllActiveDataByCustomSql(applicationContext);
-            AllLessonAndClassifierByQuery(applicationContext);
-            //AllActiveDataByLinQ(applicationContext);
+            //AllLessonAndClassifierByQuery(applicationContext);
+            AllActiveDataByLinQ(applicationContext);
 
             applicationContext.Dispose();
         }
@@ -49,7 +49,65 @@ namespace ru.zorro.static_select
         // https://metanit.com/sharp/efcore/5.3.php
         private static void AllActiveDataByLinQ(ApplicationContext applicationContext)
         {
-            Console.WriteLine("\n data in lesson source table by linq:\n");
+            string className = "LessonSource";
+            bool deleted = false;
+
+            Console.WriteLine("\n data in lesson source table by linq (deleted = {0}):\n" , deleted);
+
+
+            // выборка Classifiersets со связкой на Classifiers
+            var models1 = applicationContext.Classifiersets.Join(
+                applicationContext.Classifiers,
+                classifier_set => classifier_set.ClassifiersetId,
+                classifier => classifier.ClassifiersetId,
+                (classifier_sets, classifier) => classifier_sets)
+                .Where(classifier_sets => classifier_sets.Classnamepk.Equals(className))
+                .ToList();
+
+            Console.WriteLine("\n list 1:\n");
+            foreach (var model in models1)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
+
+
+            // выборка Classifiers со связкой на Classifiersets с учетом признака удаленности
+            var models2 = applicationContext.Classifiers.Join(
+                applicationContext.Classifiersets,
+                classifier => classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_sets) => classifier)
+                .Where(classifier => classifier.ClassifiersetId == 1 &&
+                (deleted == false ? classifier.Deleted == false : classifier.Deleted == true || classifier.Deleted == false))
+                .ToList();
+
+            Console.WriteLine("\n list 2:\n");
+            foreach (var model in models2)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
+
+            // выборка Classifiers со связкой на Classifiersets с учетом признака удаленности со всеми связываемыми параметрами
+            var models3 = applicationContext.Classifiers.Join(applicationContext.Classifiersets,
+                 classifier => classifier.ClassifiersetId,
+                 classifier_set => classifier_set.ClassifiersetId,
+                 (classifier, classifier_set) => new { classifier, classifier_set })
+           .Where(sc => sc.classifier_set.Classnamepk.Equals(className) &&
+                 (deleted == false ? sc.classifier.Deleted == false : sc.classifier.Deleted == true || sc.classifier.Deleted == false))
+           .Select(sc => sc.classifier)
+           .ToList();
+
+            Console.WriteLine("\n list 3:\n");
+            foreach (var model in models3)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
+            /*
+            var firstElement = GetNodesubsetDbSet().Join(GetClassifierDbSet(),
+                ns => ns.ClassifierId, cl => cl.ClassifierId, (ns, cl) => cl).
+                Where<Classifier>(cl => cl.ClassifiersetId == GetClassifierSet(modelType.Name).ClassifiersetId).FirstOrDefault();
+            */
+            return;
+
+
+
             /*
 
             var classifiers = applicationContext.Classifiers
@@ -86,6 +144,7 @@ namespace ru.zorro.static_select
 
             return;
             */
+            /*
             var models = applicationContext.LessonSources
                 .Join(applicationContext.Classifiers,
                 lessonSource => lessonSource.LessonSourceId,
@@ -103,7 +162,7 @@ namespace ru.zorro.static_select
                 });
             foreach (object model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
-
+            */
 
 
 
