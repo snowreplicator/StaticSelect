@@ -43,7 +43,7 @@ namespace ru.zorro.static_select
             //AllActiveDataByLinQ(applicationContext);
 
             // filter
-            LinqSelectAndSearch(applicationContext);
+            LinqSelectAndOrdering(applicationContext);
 
             applicationContext.Dispose();
         }
@@ -51,12 +51,14 @@ namespace ru.zorro.static_select
 
 
 
-        private static void LinqSelectAndSearch(ApplicationContext applicationContext)
+        private static void LinqSelectAndOrdering(ApplicationContext applicationContext)
         {
             // выборка DatatypeTest со связкой на Classifiers и на Classifiersets
             string className = "DatatypeTest";
-            bool deleted = false;
+            bool deleted = true;
 
+
+            /*
             var models = applicationContext.DatatypeTests.Join(applicationContext.Classifiers,
                  data_type => data_type.DatatypetestId.ToString(),
                  classifier => classifier.Value,
@@ -73,9 +75,107 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n select and search:\n");
             foreach (var model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
-            return;
+            */
 
+
+            /*
+            // ------------------------ 
+            // https://entityframework.net/knowledge-base/45855152/entity-framework-linq-orderby-function
+            // https://habr.com/ru/sandbox/94173/
+            string propertyName = "DatatypeBool";
+            string propertyName2 = "DatatypeInt";
+            bool asc = false;
+            bool asc2 = false;
+
+            var models2 = models.OrderByDynamic(propertyName, asc);
+            Console.WriteLine("\n sorted models 2:\n");
+            foreach (var model in models2)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
+            var models3 = models2.OrderByDynamic(propertyName2, asc2);
+            Console.WriteLine("\n sorted models 3:\n");
+            foreach (var model in models3)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+            // --------------------------------------------
+            */
+
+
+
+            string propertyName = "DatatypeBool";
+            string propertyName2 = "DatatypeInt";
+            bool asc = false;
+            bool asc2 = false;
+
+            var models = applicationContext.DatatypeTests.Join(applicationContext.Classifiers,
+                 data_type => data_type.DatatypetestId.ToString(),
+                 classifier => classifier.Value,
+                 (data_type, classifier) => new { data_type, classifier })
+           .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+           .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+           .Where(join => join.classifier_set.Classnamepk.Equals(className))
+           .Select(join => join.classifier.data_type)
+           .OrderByDynamic(propertyName, asc)
+           .OrderByDynamic(propertyName2, asc2)  // последний orderBy перебарывает предыдущие orderby
+           .ToList();
+
+            Console.WriteLine("\n sorted models :\n");
+            foreach (var model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
         }
+
+       
+
+        /// <summary>
+        /// Сортировка
+        /// </summary>
+        /// <typeparam name="T">Тип данных</typeparam>
+        /// <param name="source">Источник данных</param>
+        /// <param name="propertyName">Имя поля</param>
+        /// <param name="descending">По возрастающий</param>
+        /// <param name="anotherLevel"></param>
+        /// <returns>Отсортированный запрос либо null(В случае ошибки)</returns>
+        private static IQueryable<T> OrderingHelper<T>(IQueryable<T> source, string propertyName, bool descending, bool anotherLevel)
+        {
+            if (!string.IsNullOrEmpty(propertyName))
+                try
+                {
+                    ParameterExpression param = Expression.Parameter(typeof(T), string.Empty);
+                    MemberExpression property = Expression.PropertyOrField(param, propertyName);
+                    LambdaExpression sort = Expression.Lambda(property, param);
+
+                    MethodCallExpression call = Expression.Call(
+                        typeof(Queryable),
+                        (!anotherLevel ? "OrderBy" : "ThenBy") + (descending ? "Descending" : string.Empty),
+                        new[] { typeof(T), property.Type },
+                        source.Expression,
+                        Expression.Quote(sort));
+                    return (IQueryable<T>)source.Provider.CreateQuery<T>(call);
+                }
+                catch
+                {
+                    return null;
+                }
+            return null;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // выборка данных через использование Linq
         // https://metanit.com/sharp/efcore/3.3.php
