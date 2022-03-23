@@ -101,6 +101,9 @@ namespace ru.zorro.static_select
 
 
 
+
+            /*
+            // применение сортировки по 1ному столбцу на выборке
             string propertyName = "DatatypeBool";
             string propertyName2 = "DatatypeInt";
             bool asc = false;
@@ -124,9 +127,90 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n sorted models :\n");
             foreach (var model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
+            */
+
+
+
+
+
+            /*
+            // создать Expression
+            bool desc = true;
+            var models2 = OrderingHelper<DatatypeTest>(applicationContext.DatatypeTests, propertyName, desc, false).ToList();
+            Console.WriteLine("\n sorted models 2:\n");
+            foreach (var model in models2)
+                Console.WriteLine(JsonConvert.SerializeObject(model));*/
+
+
+
+            /*
+            string propertyName = "DatatypeBool";
+            string propertyName2 = "DatatypeInt";
+            bool desc = true;
+            bool desc2 = false;
+
+            var models = applicationContext.DatatypeTests.Join(applicationContext.Classifiers,
+                 data_type => data_type.DatatypetestId.ToString(),
+                 classifier => classifier.Value,
+                 (data_type, classifier) => new { data_type, classifier })
+           .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+           .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+           .Where(join => join.classifier_set.Classnamepk.Equals(className))
+           .Select(join => join.classifier.data_type);
+
+            var models2 = models.OrderingHelper<DatatypeTest>(propertyName, desc, false)
+                .OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
+                .ToList();
+
+            Console.WriteLine("\n sorted models 2:\n");
+            foreach (var model in models2)
+                Console.WriteLine(JsonConvert.SerializeObject(model)); 
+            */
+
+
+            // сортировка по 3м полям
+            deleted = false;
+            string propertyName = "DatatypeBool";
+            string propertyName2 = "DatatypeInt";
+            string propertyName3 = "DatatypeString";
+            bool desc = true;
+            bool desc2 = true;
+            bool desc3 = false;
+
+            var models = applicationContext.DatatypeTests
+                // соединение DatatypeTests с Classifiers
+                .Join(applicationContext.Classifiers,
+                data_type => data_type.DatatypetestId.ToString(),
+                classifier => classifier.Value,
+                (data_type, classifier) => new { data_type, classifier })
+                // условие соединения - берем все или только неудаленные записи
+                .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+                // соединение Classifiers с Classifiersets
+                .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+                // условие соединения - Classnamepk нужного справочника а само соединения было по id
+                .Where(join => join.classifier_set.Classnamepk.Equals(className))
+                // выборка данных из объединения
+                .Select(join => join.classifier.data_type)
+                // сортировка данных из объединения
+                .OrderingHelper<DatatypeTest>(propertyName, desc, false)
+                .OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
+                .OrderingHelper<DatatypeTest>(propertyName3, desc3, true)
+                .ToList();
+
+
+            Console.WriteLine("\n sorted models :\n");
+            foreach (var model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
         }
 
-       
+
 
         /// <summary>
         /// Сортировка
@@ -137,11 +221,13 @@ namespace ru.zorro.static_select
         /// <param name="descending">По возрастающий</param>
         /// <param name="anotherLevel"></param>
         /// <returns>Отсортированный запрос либо null(В случае ошибки)</returns>
-        private static IQueryable<T> OrderingHelper<T>(IQueryable<T> source, string propertyName, bool descending, bool anotherLevel)
+        private static IQueryable<T> OrderingHelperStatic<T>(IQueryable<T> source, string propertyName, bool descending, bool anotherLevel)
         {
             if (!string.IsNullOrEmpty(propertyName))
                 try
                 {
+                    string sss = (!anotherLevel ? "OrderBy" : "ThenBy") + (descending ? "Descending" : string.Empty);
+                    // ---------------
                     ParameterExpression param = Expression.Parameter(typeof(T), string.Empty);
                     MemberExpression property = Expression.PropertyOrField(param, propertyName);
                     LambdaExpression sort = Expression.Lambda(property, param);
