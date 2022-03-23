@@ -65,6 +65,23 @@ namespace ru.zorro.static_select
             return null;
         }
 
+        public static IQueryable<T> WhereHelper<T>(this IQueryable<T> source, string propertyName, string propertyValue)
+        {
+            ParameterExpression param = Expression.Parameter(typeof(T), string.Empty);
+            MemberExpression property = Expression.PropertyOrField(param, propertyName);
+            LambdaExpression sort = Expression.Lambda(property, param);
+
+            MethodCallExpression call = Expression.Call(
+                            typeof(Queryable),
+                            //(!anotherLevel ? "OrderBy" : "ThenBy") + (descending ? "Descending" : string.Empty),
+                            "Where",
+                            new[] { typeof(T), property.Type },
+                            source.Expression,
+                            Expression.Quote(sort));
+
+            return (IQueryable<T>)source.Provider.CreateQuery<T>(call);
+        }
+
 
     }
 }

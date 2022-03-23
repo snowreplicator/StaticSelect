@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using ru.zorro.static_select;
 
 
 /*
@@ -43,10 +44,79 @@ namespace ru.zorro.static_select
             //AllActiveDataByLinQ(applicationContext);
 
             // filter
-            LinqSelectAndOrdering(applicationContext);
+            //LinqSelectAndOrdering(applicationContext);
+            // search
+            LinqSelectAndSearch(applicationContext);
 
             applicationContext.Dispose();
         }
+
+        private static void LinqSelectAndSearch(ApplicationContext applicationContext)
+        {
+
+            // выборка и последовательная сортировка по массиву указанных полей
+            bool deleted = false;
+            string className = "DatatypeTest";
+            var sortProperties = new string[] { "DatatypeBool", "DatatypeInt", "DatatypeString" };
+            var sortDescProps = new bool[] { true, true, true };
+            string search = "True";
+            string search2 = "8000";
+            string search3 = "0001";
+            string search4 = "0003";
+
+
+            //Type modelType = typeof(DatatypeTest);
+            //var models2 = applicationContext.Where(modelType, x => x.GetType().Name != null).ToList();
+
+            var predicate = PredicateBuilder.False<DatatypeTest>();
+            foreach (string keyword in sortProperties)
+                predicate = predicate.Or(p => p.DatatypeString.Contains(search4));
+
+            var models = applicationContext.DatatypeTests
+                //.Where(x => x.DatatypeBool == true)
+                //.Where(x => x.GetType(). .DatatypeBool == true)
+                //.Select(x => x.GetType().Name)
+                //.Where(models => type.IsAssignableFrom(models.GetType()))
+                //.FilterByBool(false)
+                //.FilterByBool(false)
+                //.FilterByProps(search2, sortProperties)
+                .Where(predicate)
+                .ToList();
+
+            // var list2 = context.Customers.Execute<IEnumerable<Customer>>("Where(x => x.IsActive == IsActive)", new { IsActive = false }).ToList();
+            //var list2 = applicationContext.DatatypeTests.Exe
+            //.Execute<IEnumerable<Customer>>("Where(x => x.IsActive == IsActive)", new { IsActive = false }).ToList();
+
+            //var predicate = PredicateBuilder.Or("c", "d");
+            
+
+            Console.WriteLine("\n selected, searced and sorted models :\n");
+            foreach (var model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
+
+
+            // https://stackoverflow.com/questions/14901430/building-dynamic-where-clauses-in-linq-to-ef-queries
+            // https://www.roundthecode.com/dotnet/entity-framework/using-linq-expressions-to-build-dynamic-queries-in-entity-framework
+            // https://habr.com/ru/post/181065/
+            // https://pranayamr.blogspot.com/2011/04/dynamic-query-with-linq.html
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -170,7 +240,7 @@ namespace ru.zorro.static_select
                 Console.WriteLine(JsonConvert.SerializeObject(model)); 
             */
 
-
+            /*
             // выборка и последовательная сортировка по 3м полям
             deleted = false;
             string propertyName = "DatatypeBool";
@@ -201,11 +271,51 @@ namespace ru.zorro.static_select
                 //.OrderingHelper<DatatypeTest>(propertyName, desc, false)
                 //.OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
                 //.OrderingHelper<DatatypeTest>(propertyName3, desc3, true)
-                .OrderingHelper<DatatypeTest>(new string []{ "DatatypeBool", "DatatypeInt", "DatatypeString" }, new bool[] { true, true, true })
+                .OrderingHelper<DatatypeTest>(new string[] { "DatatypeBool", "DatatypeInt", "DatatypeString" }, new bool[] { true, true, true })
                 .ToList();
+            
 
 
             Console.WriteLine("\n sorted models :\n");
+            foreach (var model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+            */
+
+
+
+            // выборка и последовательная сортировка по массиву указанных полей
+            deleted = false;
+            className = "DatatypeTest";
+            var sortProperties = new string[] { "DatatypeBool", "DatatypeInt", "DatatypeString" };
+            var sortDescProps = new bool[] { true, true, true };
+
+
+            var models = applicationContext.DatatypeTests
+                // соединение DatatypeTests с Classifiers
+                .Join(applicationContext.Classifiers,
+                data_type => data_type.DatatypetestId.ToString(),
+                classifier => classifier.Value,
+                (data_type, classifier) => new { data_type, classifier })
+                // условие соединения - берем все или только неудаленные записи
+                .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+                // соединение Classifiers с Classifiersets
+                .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+                // условие соединения - Classnamepk нужного справочника а само соединения было по id
+                .Where(join => join.classifier_set.Classnamepk.Equals(className))
+                // выборка данных из объединения
+                .Select(join => join.classifier.data_type)
+                // сортировка данных из объединения
+                //.OrderingHelper<DatatypeTest>(propertyName, desc, false)
+                //.OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
+                //.OrderingHelper<DatatypeTest>(propertyName3, desc3, true)
+                .OrderingHelper<DatatypeTest>(sortProperties, sortDescProps)
+                .ToList();
+
+
+            Console.WriteLine("\n selected and sorted models :\n");
             foreach (var model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
 
