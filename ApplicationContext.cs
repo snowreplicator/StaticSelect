@@ -72,7 +72,11 @@ namespace ru.zorro.static_select
 
         public virtual DbSet<Classifier> Classifiers { get; set; }
         public virtual DbSet<Classifierset> Classifiersets { get; set; }
-        public virtual DbSet<LessonSource> LessonSources { get; set; }
         public virtual DbSet<Nodesubset> Nodesubsets { get; set; }
+
+        public virtual DbSet<LessonSource> LessonSources { get; set; }
+        public virtual DbSet<OrganizationStructure> OrganizationStructures { get; set; }
+        public virtual DbSet<DatatypeTest> DatatypeTests { get; set; }
+
     }
 }

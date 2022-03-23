@@ -33,16 +33,49 @@ namespace ru.zorro.static_select
         static void Main(string[] args)
         {
             ApplicationContext applicationContext = new ApplicationContext(DB_CONNECTION_STRING);
-            AllDataInLesonSourceTable(applicationContext);
+            // all data
+            //AllDataInLesonSourceTable(applicationContext);
+            AllDataInDatatypeTestSourceTable(applicationContext);
+
+            // select and join
             //AllActiveDataByCustomSql(applicationContext);
-            AllLessonAndClassifierByQuery(applicationContext);
+            //AllLessonAndClassifierByQuery(applicationContext);
             //AllActiveDataByLinQ(applicationContext);
+
+            // filter
+            LinqSelectAndSearch(applicationContext);
 
             applicationContext.Dispose();
         }
 
 
 
+
+        private static void LinqSelectAndSearch(ApplicationContext applicationContext)
+        {
+            // выборка DatatypeTest со связкой на Classifiers и на Classifiersets
+            string className = "DatatypeTest";
+            bool deleted = false;
+
+            var models = applicationContext.DatatypeTests.Join(applicationContext.Classifiers,
+                 data_type => data_type.DatatypetestId.ToString(),
+                 classifier => classifier.Value,
+                 (data_type, classifier) => new { data_type, classifier })
+           .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+           .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+           .Where(join => join.classifier_set.Classnamepk.Equals(className))
+           .Select(join => join.classifier.data_type)
+           .ToList();
+
+            Console.WriteLine("\n select and search:\n");
+            foreach (var model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+            return;
+
+        }
 
         // выборка данных через использование Linq
         // https://metanit.com/sharp/efcore/3.3.php
@@ -52,7 +85,7 @@ namespace ru.zorro.static_select
             string className = "LessonSource";
             bool deleted = false;
 
-            Console.WriteLine("\n data in lesson source table by linq (deleted = {0}):\n" , deleted);
+            Console.WriteLine("\n data in lesson source table by linq (deleted = {0}):\n", deleted);
 
 
             /*
@@ -87,6 +120,9 @@ namespace ru.zorro.static_select
                 Console.WriteLine(JsonConvert.SerializeObject(model));
             */
 
+
+
+            /*
             // выборка Classifiers со связкой на Classifiersets с учетом признака удаленности со всеми связываемыми параметрами
             var models3 = applicationContext.Classifiers.Join(applicationContext.Classifiersets,
                  classifier => classifier.ClassifiersetId,
@@ -96,101 +132,55 @@ namespace ru.zorro.static_select
                  (deleted == false ? sc.classifier.Deleted == false : sc.classifier.Deleted == true || sc.classifier.Deleted == false))
            .Select(sc => sc.classifier)
            .ToList();
-
+            
             Console.WriteLine("\n list 3:\n");
             foreach (var model in models3)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
+            */
 
 
-            // выборка Classifiers со связкой на Classifiersets и на LessonSource
+
+            // выборка LessonSource со связкой на Classifiers и на Classifiersets
+            var models4 = applicationContext.LessonSources.Join(applicationContext.Classifiers,
+                 lesson => lesson.LessonSourceId.ToString(),
+                 classifier => classifier.Value,
+                 (lesson, classifier) => new { lesson, classifier })
+           .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+           .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+           .Where(join => join.classifier_set.Classnamepk.Equals(className))
+           .Select(join => join.classifier.lesson)
+           .ToList();
+
+            Console.WriteLine("\n list 4:\n");
+            foreach (var model in models4)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
 
 
+
+            // выборка DatatypeTest со связкой на Classifiers и на Classifiersets
+            className = "DatatypeTest";
+            deleted = true;
+
+            var models5 = applicationContext.DatatypeTests.Join(applicationContext.Classifiers,
+                 data_type => data_type.DatatypetestId.ToString(),
+                 classifier => classifier.Value,
+                 (data_type, classifier) => new { data_type, classifier })
+           .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+           .Join(applicationContext.Classifiersets,
+                classifier => classifier.classifier.ClassifiersetId,
+                classifier_set => classifier_set.ClassifiersetId,
+                (classifier, classifier_set) => new { classifier, classifier_set })
+           .Where(join => join.classifier_set.Classnamepk.Equals(className))
+           .Select(join => join.classifier.data_type)
+           .ToList();
+
+            Console.WriteLine("\n list 5:\n");
+            foreach (var model in models5)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
             return;
-
-
-
-            /*
-
-            var classifiers = applicationContext.Classifiers
-                .Join(applicationContext.Classifiersets,
-                classifier => classifier.ClassifiersetId,
-                classifierset => classifierset.ClassifiersetId,
-                (classifier, classifierset) => new
-                {
-                    classifiersetId = classifierset.ClassifiersetId,
-                    classnamepk = classifierset.Classnamepk,
-                    classifierId = classifier.ClassifierId,
-                    classifier_classifiersetId = classifier.ClassifiersetId,
-                    value = classifier.Value
-                });
-            foreach (object model in classifiers)
-                Console.WriteLine(JsonConvert.SerializeObject(model));
-
-
-            Console.WriteLine("\n\n");
-            var lessons = from lessonSource in applicationContext.LessonSources
-                          join classifier in applicationContext.Classifiers
-                          //on lessonSource.LessonSourceId equals classifier.ClassifierId
-                          on lessonSource.LessonSourceId.ToString() equals classifier.Value
-                          select new
-                          {
-                              lesson_lessonSourceId = lessonSource.LessonSourceId,
-                              classifier_classifiersetId = classifier.ClassifiersetId,
-                              classifier_classifierId = classifier.ClassifierId,
-                              classifier_value = classifier.Value
-
-                          };
-            foreach (object model in lessons)
-                Console.WriteLine(JsonConvert.SerializeObject(model));
-
-            return;
-            */
-            /*
-            var models = applicationContext.LessonSources
-                .Join(applicationContext.Classifiers,
-                lessonSource => lessonSource.LessonSourceId,
-                //classifier => classifier.ClassifierId,
-                // classifier => classifier.ClassifiersetId,
-                classifier => int.Parse(classifier.Value),
-                //classifier => classifier.Value,
-                //classifier => classifier.Value,  //int.Parse(classifier.Value),
-                (lessonSource, classifier) => new
-                {
-                    lessonSourceId = lessonSource.LessonSourceId,
-                    value = classifier.Value,
-                    classifierId = classifier.ClassifierId,
-                    classifiersetId = classifier.ClassifiersetId
-                });
-            foreach (object model in models)
-                Console.WriteLine(JsonConvert.SerializeObject(model));
-            */
-
-
-
-            /*
-            var users = db.Users.Join(db.Companies, // второй набор
-        u => u.CompanyId, // свойство-селектор объекта из первого набора
-        c => c.Id, // свойство-селектор объекта из второго набора
-        (u, c) => new // результат
-        {
-            Name = u.Name,
-            Company = c.Name,
-            Age = u.Age
-        });
-            */
-            /*
-
-            //int i = int.Parse("");
-            var models = applicationContext.LessonSources.Include(u => u.Profile).ToList();
-            foreach (LessonSource model in models)
-                Console.WriteLine(JsonConvert.SerializeObject(model));
-            */
-            // db.Users.Include(u => u.Profile).ToList())
-
-            /*
-            var users = db.Users
-                    .Include(u => u.Company)  // подгружаем данные по компаниям
-                    .ToList();*/
         }
 
 
@@ -312,6 +302,16 @@ namespace ru.zorro.static_select
 
             List<LessonSource> models = applicationContext.LessonSources.ToList();
             foreach (LessonSource model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+        }
+
+        private static void AllDataInDatatypeTestSourceTable(ApplicationContext applicationContext)
+        {
+            Console.WriteLine("\nall data in datatypetestt source table:\n");
+
+
+            List<DatatypeTest> models = applicationContext.DatatypeTests.ToList();
+            foreach (DatatypeTest model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
         }
     }
