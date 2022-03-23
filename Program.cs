@@ -171,14 +171,14 @@ namespace ru.zorro.static_select
             */
 
 
-            // сортировка по 3м полям
+            // выборка и последовательная сортировка по 3м полям
             deleted = false;
             string propertyName = "DatatypeBool";
             string propertyName2 = "DatatypeInt";
             string propertyName3 = "DatatypeString";
             bool desc = true;
             bool desc2 = true;
-            bool desc3 = false;
+            bool desc3 = true;
 
             var models = applicationContext.DatatypeTests
                 // соединение DatatypeTests с Classifiers
@@ -198,9 +198,10 @@ namespace ru.zorro.static_select
                 // выборка данных из объединения
                 .Select(join => join.classifier.data_type)
                 // сортировка данных из объединения
-                .OrderingHelper<DatatypeTest>(propertyName, desc, false)
-                .OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
-                .OrderingHelper<DatatypeTest>(propertyName3, desc3, true)
+                //.OrderingHelper<DatatypeTest>(propertyName, desc, false)
+                //.OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
+                //.OrderingHelper<DatatypeTest>(propertyName3, desc3, true)
+                .OrderingHelper<DatatypeTest>(new string []{ "DatatypeBool", "DatatypeInt", "DatatypeString" }, new bool[] { true, true, true })
                 .ToList();
 
 
@@ -502,3 +503,52 @@ namespace ru.zorro.static_select
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(7, 'строка номер 0001', 7000, 666.66, true, '2021-11-26 22:26:26.666');
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(8, 'строка номер 0002', 7001, 666.66, true, '2021-11-26 22:26:26.666');
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(9, 'строка номер 0003', 7000, 666.66, true, '2021-11-26 22:26:26.666');
+// 
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(10, 'строка номер 0001', 8000, 666.66, true, '2021-11-26 22:26:26.666');
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(11, 'строка номер 0002', 8001, 666.66, true, '2021-11-26 22:26:26.666');
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(12, 'строка номер 0003', 8000, 666.66, true, '2021-11-26 22:26:26.666');
+// 
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(13, 'строка номер 0001', 9001, 666.66, false, '2021-11-26 22:26:26.666');
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(14, 'строка номер 0002', 9000, 666.66, false, '2021-11-26 22:26:26.666');
+// INSERT INTO multi_d_cases."DatatypeTest" (datatypetest_id, datatype_string, datatype_int, datatype_double, datatype_bool, datatype_date) 
+//     VALUES(15, 'строка номер 0003', 9000, 666.66, false, '2021-11-26 22:26:26.666');
+// 
+// 
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(50, 5, '7', false);
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(51, 5, '8', false);
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(52, 5, '9', false);
+// 
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(53, 5, '10', false);
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(54, 5, '11', false);
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(55, 5, '12', false);
+// 
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(56, 5, '13', false);
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(57, 5, '14', false);
+// INSERT INTO classifiers.classifier (classifier_id, classifierset_id, value, deleted) VALUES(58, 5, '15', false);

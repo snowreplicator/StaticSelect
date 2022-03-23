@@ -26,11 +26,24 @@ namespace ru.zorro.static_select
         }
 
 
+        public static IQueryable<T> OrderingHelper<T>(this IQueryable<T> source, string[] propertyName, bool[] descending)
+        {
+            bool anotherLevel = false;
+            foreach (var property in propertyName)
+            {
+                source = source.OrderingHelper<T>(property, true, anotherLevel);
+                anotherLevel = true;
+            }
+            return source;
+        }
+
+
         public static IQueryable<T> OrderingHelper<T>(this IQueryable<T> source, string propertyName, bool descending, bool anotherLevel)
         {
             if (!string.IsNullOrEmpty(propertyName))
                 try
                 {
+                    // --------------
                     string sss = (!anotherLevel ? "OrderBy" : "ThenBy") + (descending ? "Descending" : string.Empty);
                     // ---------------
                     ParameterExpression param = Expression.Parameter(typeof(T), string.Empty);
