@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.Collections.Generic;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace ru.zorro.static_select
 {
     public static class SortingExtension
     {
+
+
+        // не используется 
         public static IEnumerable<T> OrderByDynamic<T>(this IEnumerable<T> source, string propertyName, bool Ascending)
         {
             var asc = source.OrderBy(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
@@ -28,11 +24,7 @@ namespace ru.zorro.static_select
 
 
 
-
-
-
-
-
+        // сортировка по указанным пропертям в указанных направлениях
         public static IQueryable<T> OrderingHelper<T>(this IQueryable<T> source, string[] propertyName, bool[] descending)
         {
             bool anotherLevel = false;
@@ -45,14 +37,12 @@ namespace ru.zorro.static_select
         }
 
 
+        // сортировка по указанной проперти в указанном направлении
         public static IQueryable<T> OrderingHelper<T>(this IQueryable<T> source, string propertyName, bool descending, bool anotherLevel)
         {
             if (!string.IsNullOrEmpty(propertyName))
                 try
                 {
-                    // --------------
-                    string sss = (!anotherLevel ? "OrderBy" : "ThenBy") + (descending ? "Descending" : string.Empty);
-                    // ---------------
                     ParameterExpression param = Expression.Parameter(typeof(T), string.Empty);
                     MemberExpression property = Expression.PropertyOrField(param, propertyName);
                     LambdaExpression sort = Expression.Lambda(property, param);
@@ -71,48 +61,6 @@ namespace ru.zorro.static_select
                 }
             return null;
         }
-
-        public static IQueryable<T> WhereHelper<T>(this IQueryable<T> source, string propertyName, string propertyValue)
-        {
-            ParameterExpression param = Expression.Parameter(typeof(T), string.Empty);
-            MemberExpression property = Expression.PropertyOrField(param, propertyName);
-            LambdaExpression sort = Expression.Lambda(property, param);
-
-            MethodCallExpression call = Expression.Call(
-                            typeof(Queryable),
-                            //(!anotherLevel ? "OrderBy" : "ThenBy") + (descending ? "Descending" : string.Empty),
-                            "Where",
-                            new[] { typeof(T), property.Type },
-                            source.Expression,
-                            Expression.Quote(sort));
-
-            return (IQueryable<T>)source.Provider.CreateQuery<T>(call);
-        }
-
-
-
-
-
-
-
-
-
-        /*
-        public static IEnumerable<T> WhereByDynamic<T>(this IEnumerable<T> source, string propertyName)
-        {
-            //var asc = source.OrderBy(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
-            //var desc = source.OrderByDescending(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
-
-            
-            // if (Ascending)
-            //     return source.OrderBy(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
-            // else
-            //     return source.OrderByDescending(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
-            
-
-            return source.Where(x => x.GetType().GetProperty(propertyName).GetValue(x, null).Equals("sss"));
-        }
-       */
 
     }
 }

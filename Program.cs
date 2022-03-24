@@ -38,7 +38,7 @@ namespace ru.zorro.static_select
             ApplicationContext applicationContext = new ApplicationContext(DB_CONNECTION_STRING);
             // all data
             //AllDataInLesonSourceTable(applicationContext);
-            //AllDataInDatatypeTestSourceTable(applicationContext);
+            AllDataInDatatypeTestSourceTable(applicationContext);
 
             // select and join
             //AllActiveDataByCustomSql(applicationContext);
@@ -51,8 +51,8 @@ namespace ru.zorro.static_select
             //LinqSelectAndSearchPredicates(applicationContext);
             LinqSelectAndSearch(applicationContext);
 
+            // test of insert speed
             // LocalTableInsert(applicationContext);
-
             applicationContext.Dispose();
         }
 
@@ -69,7 +69,7 @@ namespace ru.zorro.static_select
         {
 
             // выборка и последовательная сортировка по массиву указанных полей
-            bool deleted = false;
+            bool deleted = true;
             string className = "DatatypeTest";
             var sortProperties = new string[] { "DatatypeBool", "DatatypeInt", "DatatypeString" };
             var sortDescProps = new bool[] { true, true, true };
@@ -79,223 +79,57 @@ namespace ru.zorro.static_select
             string search4 = "0003";
 
 
-            Type modelType = typeof(DatatypeTests);
-            //var models2 = applicationContext.Where(modelType, x => x.GetType().Name != null).ToList();
-
-            /*
-            var predicate = PredicateBuilder.False<DatatypeTest>();
-            foreach (string keyword in sortProperties)
-                predicate = predicate.Or(p => p.DatatypeString.Contains(search4));*/
-
-
-            /*
-            var predicate = PredicateBuilder.False<DatatypeTest>();
-            predicate = predicate.Or(p => p.DatatypeString.Contains(search4));
-
-            var predicate2 = PredicateBuilder.False<DatatypeTest>();
-            predicate2 = predicate2.Or(p => p.DatatypeInt.ToString().Equals(search2));
-
-            var predicate3 = PredicateBuilder.True<DatatypeTest>();
-            predicate3 = predicate3.And(p => p.DatatypeString.Contains(search4));
-
-            var predicate4 = PredicateBuilder.True<DatatypeTest>();
-            predicate4 = predicate4.And(p => p.DatatypeInt.ToString().Equals(search2));
-
             var models = applicationContext.DatatypeTests
-                //.Where(x => x.DatatypeBool == true)
-                //.Where(x => x.GetType(). .DatatypeBool == true)
-                //.Select(x => x.GetType().Name)
-                //.Where(models => type.IsAssignableFrom(models.GetType()))
-                //.FilterByBool(false)
-                //.FilterByBool(false)
-                //.FilterByProps(search2, sortProperties)
-                .Where(predicate)
-                //.Where(predicate2)
-                //.Where(predicate3)
-                //.Where(predicate4)
-                .ToList();
-
-            // var list2 = context.Customers.Execute<IEnumerable<Customer>>("Where(x => x.IsActive == IsActive)", new { IsActive = false }).ToList();
-            //var list2 = applicationContext.DatatypeTests.Exe
-            //.Execute<IEnumerable<Customer>>("Where(x => x.IsActive == IsActive)", new { IsActive = false }).ToList();
-
-            //var predicate = PredicateBuilder.Or("c", "d");
+            // поиск в текстовых пропертях в вхождение данной подстроки
+            .TextFilter("0003")
+            .ToList();
 
 
             Console.WriteLine("\n selected, searced and sorted models :\n");
             foreach (var model in models)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
-            */
-
-
-            // https://stackoverflow.com/questions/14901430/building-dynamic-where-clauses-in-linq-to-ef-queries
-            // https://www.roundthecode.com/dotnet/entity-framework/using-linq-expressions-to-build-dynamic-queries-in-entity-framework
-            // https://habr.com/ru/post/181065/
-            // https://pranayamr.blogspot.com/2011/04/dynamic-query-with-linq.html
 
 
 
 
 
-            // http://sergeyteplyakov.blogspot.com/2010/12/dynamic-linq.html
-            // http://www.albahari.com/nutshell/predicatebuilder.aspx
-            // http://www.karanowood.com/Dynamic%20Expressions.html#_Dynamic_Expression_API
-            var x = Expression.Parameter(typeof(int), "xxxx");
-            var expression = Expression.Lambda<Func<int, int>>(
-                Expression.Add(
-                    x,
-                    Expression.Constant(1)
-                ),
-                x
-                );
+            var models2 = applicationContext.DatatypeTests
+                        // соединение DatatypeTests с Classifiers
+                        .Join(applicationContext.Classifiers,
+                        data_type => data_type.DatatypetestId.ToString(),
+                        classifier => classifier.Value,
+                        (data_type, classifier) => new { data_type, classifier })
+                        // условие соединения - берем все или только неудаленные записи
+                        .Where(join => (deleted == false ? join.classifier.Deleted == false : join.classifier.Deleted == true || join.classifier.Deleted == false))
+                        // соединение Classifiers с Classifiersets
+                        .Join(applicationContext.Classifiersets,
+                        classifier => classifier.classifier.ClassifiersetId,
+                        classifier_set => classifier_set.ClassifiersetId,
+                        (classifier, classifier_set) => new { classifier, classifier_set })
+                        // условие соединения - Classnamepk нужного справочника а само соединения было по id
+                        .Where(join => join.classifier_set.Classnamepk.Equals(className))
+                        // выборка данных из объединения
+                        .Select(join => join.classifier.data_type)
+                        // поиск в текстовых пропертях в вхождение данной подстроки
+                        .TextFilter("0001")
+                        // сортировка данных из объединения
+                        //.OrderingHelper<DatatypeTest>(propertyName, desc, false)
+                        //.OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
+                        //.OrderingHelper<DatatypeTest>(propertyName3, desc3, true)
+                        .OrderingHelper<DatatypeTests>(sortProperties, sortDescProps)
+                        .ToList();
 
-
-
-            /*
-            var xExpression = Expression.Parameter(typeof(int), "x");
-            var parsedExpression =
-                (Expression<Func<int, int>>)DynamicExpression.ParseLambda(
-                new[] { xExpression }, null, "x + 1");*/
-            /*
-            Expression<Func<DatatypeTest, bool>> e1 =
-    DynamicExpression.ParseLambda<DatatypeTest, bool>("City = \"London\"");
-            Expression<Func<Customer, bool>> e2 =
-                DynamicExpression.ParseLambda<Customer, bool>("Orders.Count >= 10");
-            IQueryable<Customer> query =
-                db.Customers.Where("@0(it) and @1(it)", e1, e2);
-
-            var query =
-    applicationContext.DatatypeTests.
-    Where("City = @0 and Orders.Count >= @1", "London", 10).
-    OrderBy("CompanyName").
-    Select("new(CompanyName as Name, Phone)");*/
-
-
-            sortProperties = new string[] { "DatatypeBool", "DatatypeInt", "DatatypeString" };
-            sortDescProps = new bool[] { true, true, true };
-
-
-
-            var predicate = PredicateBuilder.False<DatatypeTests>();
-            predicate = predicate.Or(p => p.DatatypeString.Contains(search4));
-
-            var predicate2 = PredicateBuilder.False<DatatypeTests>();
-            predicate2 = predicate2.Or(p => p.DatatypeInt.ToString().Equals(search2));
-
-
-
-            var predicate33 = PredicateBuilder.True<DatatypeTests>();
-            predicate33 = predicate33.And(e1 => e1.DatatypeString.Contains("0001"));
-            predicate33 = predicate33.And(e1 => e1.DatatypeInt == 9001);
-            predicate33 = predicate33.Or(e1 => e1.DatatypeInt == 1111);
-
-            var models = applicationContext.DatatypeTests
-            //.Where(x => x.DatatypeBool == true)
-            //.Where(x => x.GetType(). .DatatypeBool == true)
-            //.Select(x => x.GetType().Name)
-            //.Where(models => type.IsAssignableFrom(models.GetType()))
-            //.FilterByBool(false)
-            //.FilterByBool(false)
-            //.FilterByProps(search2, sortProperties)
-            //.Where(predicate)
-            //.Where(predicate2)
-            //.Where(predicate2)
-            //.Where(x => x.GetType().GetProperty("DatatypeString").GetValue(x) == 3 )
-
-
-            // https://stackoverflow.com/questions/68737681/the-linq-expression-could-not-be-translated-either-rewrite-the-query-in-a-form
-            // .ToList()
-            //.Where<DatatypeTest>(x => x.GetType().GetProperty("DatatypeString").GetValue(x, null).Equals("строка номер 0001"))
-
-            //        .WhereHelper2("DatatypeBool", true)
-            //.Where(predicate33)
-            //.OrderingHelper<DatatypeTests>(sortProperties, sortDescProps)
-            //.Where(predicate3)
-            //.Where(predicate4)
-            .TextFilter("0003")
-            //    .Select(CreateNewStatement("DatatypetestId, DatatypeString"))
-               .ToList();
-
-
-            Console.WriteLine("\n selected, searced and sorted models :\n");
-            foreach (var model in models)
-              Console.WriteLine(JsonConvert.SerializeObject(model));
-
-
-
-            var x2 = Expression.Parameter(typeof(int), "xx => xx.DatatypeInt == 8000");
-            var expression2 = Expression.Lambda<Func<int, int>>(
-                Expression.Add(
-                    x2,
-                    Expression.Constant(0)
-                ),
-                x
-                );
-
+            Console.WriteLine("\n selected, searced and sorted models 2:\n");
+            foreach (var model in models2)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
 
             Console.WriteLine("the end");
-            // https://stackoverflow.com/questions/3932542/how-to-dynamically-build-and-return-a-linq-predicate-based-on-user-input
-
         }
 
 
 
 
-
-
-        public static Func<DatatypeTests, DatatypeTests> CreateNewStatement(string fields)
-        {
-            // input parameter "o"
-            var xParameter = Expression.Parameter(typeof(DatatypeTests), "o");
-
-            // new statement "new Data()"
-            var xNew = Expression.New(typeof(DatatypeTests));
-
-            // create initializers
-            var bindings = fields.Split(',').Select(o => o.Trim())
-                .Select(o => {
-
-            // property "Field1"
-            var mi = typeof(DatatypeTests).GetProperty(o);
-
-            // original value "o.Field1"
-            var xOriginal = Expression.Property(xParameter, mi);
-
-            // set value "Field1 = o.Field1"
-            return Expression.Bind(mi, xOriginal);
-                }
-            );
-
-            // initialization "new Data { Field1 = o.Field1, Field2 = o.Field2 }"
-            var xInit = Expression.MemberInit(xNew, bindings);
-
-            // expression "o => new Data { Field1 = o.Field1, Field2 = o.Field2 }"
-            var lambda = Expression.Lambda<Func<DatatypeTests, DatatypeTests>>(xInit, xParameter);
-
-            // compile to Func<Data, Data>
-            return lambda.Compile();
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // поиск и отсев с использованием предикатов
         private static void LinqSelectAndSearchPredicates(ApplicationContext applicationContext)
         {
 
@@ -865,7 +699,8 @@ namespace ru.zorro.static_select
                         Code = "local code: " + i
                     };
 
-                    applicationContext.AddEntity(lesson);
+                    //applicationContext.AddEntity(lesson);
+                    applicationContext.Add(lesson);
                     applicationContext.SaveChanges();
 
                     dbContextTransaction.Commit();
