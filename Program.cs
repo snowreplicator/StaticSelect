@@ -48,8 +48,8 @@ namespace ru.zorro.static_select
             // filter
             //LinqSelectAndOrdering(applicationContext);
             // search
-            LinqSelectAndSearchPredicates(applicationContext);
-            //LinqSelectAndSearch(applicationContext);
+            //LinqSelectAndSearchPredicates(applicationContext);
+            LinqSelectAndSearch(applicationContext);
 
             // LocalTableInsert(applicationContext);
 
@@ -190,28 +190,30 @@ namespace ru.zorro.static_select
             predicate33 = predicate33.Or(e1 => e1.DatatypeInt == 1111);
 
             var models = applicationContext.DatatypeTests
-               //.Where(x => x.DatatypeBool == true)
-               //.Where(x => x.GetType(). .DatatypeBool == true)
-               //.Select(x => x.GetType().Name)
-               //.Where(models => type.IsAssignableFrom(models.GetType()))
-               //.FilterByBool(false)
-               //.FilterByBool(false)
-               //.FilterByProps(search2, sortProperties)
-               //.Where(predicate)
-               //.Where(predicate2)
-               //.Where(predicate2)
-               //.Where(x => x.GetType().GetProperty("DatatypeString").GetValue(x) == 3 )
+            //.Where(x => x.DatatypeBool == true)
+            //.Where(x => x.GetType(). .DatatypeBool == true)
+            //.Select(x => x.GetType().Name)
+            //.Where(models => type.IsAssignableFrom(models.GetType()))
+            //.FilterByBool(false)
+            //.FilterByBool(false)
+            //.FilterByProps(search2, sortProperties)
+            //.Where(predicate)
+            //.Where(predicate2)
+            //.Where(predicate2)
+            //.Where(x => x.GetType().GetProperty("DatatypeString").GetValue(x) == 3 )
 
 
             // https://stackoverflow.com/questions/68737681/the-linq-expression-could-not-be-translated-either-rewrite-the-query-in-a-form
             // .ToList()
             //.Where<DatatypeTest>(x => x.GetType().GetProperty("DatatypeString").GetValue(x, null).Equals("строка номер 0001"))
 
-        //        .WhereHelper2("DatatypeBool", true)
-               .Where(predicate33)
-               .OrderingHelper<DatatypeTests>(sortProperties, sortDescProps)
-               //.Where(predicate3)
-               //.Where(predicate4)
+            //        .WhereHelper2("DatatypeBool", true)
+            //.Where(predicate33)
+            //.OrderingHelper<DatatypeTests>(sortProperties, sortDescProps)
+            //.Where(predicate3)
+            //.Where(predicate4)
+            .TextFilter("0003")
+            //    .Select(CreateNewStatement("DatatypetestId, DatatypeString"))
                .ToList();
 
 
@@ -235,6 +237,60 @@ namespace ru.zorro.static_select
             // https://stackoverflow.com/questions/3932542/how-to-dynamically-build-and-return-a-linq-predicate-based-on-user-input
 
         }
+
+
+
+
+
+
+        public static Func<DatatypeTests, DatatypeTests> CreateNewStatement(string fields)
+        {
+            // input parameter "o"
+            var xParameter = Expression.Parameter(typeof(DatatypeTests), "o");
+
+            // new statement "new Data()"
+            var xNew = Expression.New(typeof(DatatypeTests));
+
+            // create initializers
+            var bindings = fields.Split(',').Select(o => o.Trim())
+                .Select(o => {
+
+            // property "Field1"
+            var mi = typeof(DatatypeTests).GetProperty(o);
+
+            // original value "o.Field1"
+            var xOriginal = Expression.Property(xParameter, mi);
+
+            // set value "Field1 = o.Field1"
+            return Expression.Bind(mi, xOriginal);
+                }
+            );
+
+            // initialization "new Data { Field1 = o.Field1, Field2 = o.Field2 }"
+            var xInit = Expression.MemberInit(xNew, bindings);
+
+            // expression "o => new Data { Field1 = o.Field1, Field2 = o.Field2 }"
+            var lambda = Expression.Lambda<Func<DatatypeTests, DatatypeTests>>(xInit, xParameter);
+
+            // compile to Func<Data, Data>
+            return lambda.Compile();
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -273,7 +329,7 @@ namespace ru.zorro.static_select
                 .Where(join => join.classifier_set.Classnamepk.Equals(className))
                 // выборка данных из объединения
                 .Select(join => join.classifier.data_type)
-                .Where(predicate)
+                .Where(predicate)                
                 // сортировка данных из объединения
                 //.OrderingHelper<DatatypeTest>(propertyName, desc, false)
                 //.OrderingHelper<DatatypeTest>(propertyName2, desc2, true)
@@ -288,7 +344,6 @@ namespace ru.zorro.static_select
 
 
         }
-
 
 
 
