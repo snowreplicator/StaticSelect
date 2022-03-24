@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ru.zorro.static_select
 {
     [Table("DatatypeTest", Schema = "multi_d_cases")]
-    public partial class DatatypeTest
+    public partial class DatatypeTests
     {
         [Key]
         [Column("datatypetest_id")]

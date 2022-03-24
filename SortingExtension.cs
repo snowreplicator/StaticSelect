@@ -26,6 +26,13 @@ namespace ru.zorro.static_select
         }
 
 
+
+
+
+
+
+
+
         public static IQueryable<T> OrderingHelper<T>(this IQueryable<T> source, string[] propertyName, bool[] descending)
         {
             bool anotherLevel = false;
@@ -82,6 +89,30 @@ namespace ru.zorro.static_select
             return (IQueryable<T>)source.Provider.CreateQuery<T>(call);
         }
 
+
+
+
+
+
+
+
+
+        /*
+        public static IEnumerable<T> WhereByDynamic<T>(this IEnumerable<T> source, string propertyName)
+        {
+            //var asc = source.OrderBy(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
+            //var desc = source.OrderByDescending(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
+
+            
+            // if (Ascending)
+            //     return source.OrderBy(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
+            // else
+            //     return source.OrderByDescending(x => x.GetType().GetProperty(propertyName).GetValue(x, null));
+            
+
+            return source.Where(x => x.GetType().GetProperty(propertyName).GetValue(x, null).Equals("sss"));
+        }
+       */
 
     }
 }
