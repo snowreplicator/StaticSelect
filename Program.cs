@@ -5,9 +5,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using ru.zorro.static_select;
 using System.Diagnostics;
-//using System.Linq.Dynamic;
+
 
 
 /*
@@ -67,8 +66,6 @@ namespace ru.zorro.static_select
 
         private static void LinqSelectAndSearch(ApplicationContext applicationContext)
         {
-
-            // выборка и последовательная сортировка по массиву указанных полей
             bool deleted = true;
             string className = "DatatypeTest";
             var sortProperties = new string[] { "DatatypeBool", "DatatypeInt", "DatatypeString" };
@@ -79,9 +76,15 @@ namespace ru.zorro.static_select
             string search4 = "0003";
 
 
-            var models = applicationContext.DatatypeTests
+            var models = /*((IQueryable<object>)*/ applicationContext.DatatypeTests
             // поиск в текстовых пропертях в вхождение данной подстроки
-            .TextFilter("0003")
+            //.TextFilter("0003")
+            //.SearchHelper("9000")
+            .SearchHelper("11")
+            //.Where(x => (bool) x.GetPropertyValue("DatatypeBool") == true)
+            //.Where(x => x.GetPropertyValue("DatatypeString").Equals("число где одинадцать"))
+            //.SearchHelper("7000")
+            //.OrderingHelper<DatatypeTests>(sortProperties, sortDescProps)
             .ToList();
 
 
@@ -92,7 +95,7 @@ namespace ru.zorro.static_select
 
 
 
-
+            /*
             var models2 = applicationContext.DatatypeTests
                         // соединение DatatypeTests с Classifiers
                         .Join(applicationContext.Classifiers,
@@ -122,7 +125,7 @@ namespace ru.zorro.static_select
             Console.WriteLine("\n selected, searced and sorted models 2:\n");
             foreach (var model in models2)
                 Console.WriteLine(JsonConvert.SerializeObject(model));
-
+            */
             Console.WriteLine("the end");
         }
 
