@@ -48,7 +48,10 @@ namespace ru.zorro.static_select
             //LinqSelectAndOrdering(applicationContext);
             // search
             //LinqSelectAndSearchPredicates(applicationContext);
-            LinqSelectAndSearch(applicationContext);
+            //LinqSelectAndSearch(applicationContext);
+
+
+            LinqSelectAndSearchPredicateWhere(applicationContext);
 
             // test of insert speed
             // LocalTableInsert(applicationContext);
@@ -56,6 +59,30 @@ namespace ru.zorro.static_select
         }
 
 
+
+
+
+
+        private static void LinqSelectAndSearchPredicateWhere(ApplicationContext applicationContext)
+        {
+            var searchDateTime = new DateTime(2021, 11, 24, 22, 24, 24, 444);
+            Console.WriteLine("searchDateTime = " + searchDateTime);
+
+            var models = applicationContext.DatatypeTests
+                //.WhereEquals("DatatypeString", "строка номер 0005")
+                //.WhereEquals("DatatypeDouble", 555.55)
+                //.WhereEquals("DatatypeDate", searchDateTime.ToUniversalTime())
+                //
+                //.WhereEquals_2("DatatypeDouble", 555.55)
+                .WhereEquals_2("DatatypeDate", searchDateTime.ToUniversalTime())
+                .ToList();
+
+
+            Console.WriteLine("\n selected, searced and sorted models :\n");
+            foreach (var model in models)
+                Console.WriteLine(JsonConvert.SerializeObject(model));
+
+        }
 
 
 
